@@ -218,3 +218,7 @@ textarea { min-height: 100px; resize: vertical; }
 .tag-edit { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--mc); background: var(--card); width: 200px; max-width: 70vw; }
 .food .edit.incart { color: var(--primary); }
 .spesa-line .edit { border: 0; background: none; color: #b0b7c0; padding: 4px; display: grid; }
+
+.spesa-line.flag .chk { border-radius: 50%; }
+.spesa-line.flag.done .t { text-decoration: none; color: var(--text); font-weight: 600; }
+.seg button svg.i { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
