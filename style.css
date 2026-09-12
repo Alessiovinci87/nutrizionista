@@ -1,7 +1,8 @@
 :root {
-  --bg: #f4f6f3;
+  color-scheme: light;
+  --bg: #f7faf7;
   --card: #ffffff;
-  --text: #1f2a24;
+  --text: #24312a;
   --muted: #6b7a72;
   --line: #e1e7e2;
   --primary: #2f855a;
@@ -10,12 +11,6 @@
   --danger: #c53030;
   --radius: 14px;
   --shadow: 0 1px 3px rgba(0,0,0,.08);
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #121714; --card: #1c2420; --text: #edf2ee; --muted: #9aaaa0;
-    --line: #2b3630; --primary: #48bb78; --primary-soft: #1f3529;
-  }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -36,7 +31,7 @@ button { font: inherit; cursor: pointer; }
 .topbar h1 { font-size: 18px; margin-bottom: 8px; }
 .persone { display: flex; gap: 6px; overflow-x: auto; }
 .persone button {
-  flex: 0 0 auto; border: 1px solid var(--line); background: var(--bg); color: var(--text);
+  flex: 0 0 auto; min-height: 40px; border: 1px solid var(--line); background: var(--bg); color: var(--text);
   border-radius: 999px; padding: 6px 12px; font-size: 14px;
 }
 .persone button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -49,7 +44,7 @@ main { padding: 12px 14px; max-width: 900px; margin: 0 auto; }
   padding-bottom: env(safe-area-inset-bottom);
 }
 .tabs button {
-  flex: 1; border: 0; background: none; color: var(--muted);
+  flex: 1; min-height: 56px; border: 0; background: none; color: var(--muted);
   padding: 8px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 20px;
 }
 .tabs button span { font-size: 11px; }
@@ -63,10 +58,9 @@ main { padding: 12px 14px; max-width: 900px; margin: 0 auto; }
 .card h3 { font-size: 14px; color: var(--muted); margin: 10px 0 4px; text-transform: uppercase; letter-spacing: .03em; }
 .muted { color: var(--muted); font-size: 13px; }
 .notice { background: #fff7e6; border-left: 4px solid var(--accent); padding: 8px 10px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; color: #5a3a00; }
-@media (prefers-color-scheme: dark) { .notice { background: #3a2a10; color: #ffd9a0; } }
 
 .meal {
-  display: flex; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line);
+  display: flex; gap: 10px; padding: 12px 0; min-height: 56px; border-top: 1px solid var(--line);
   align-items: flex-start; cursor: pointer;
 }
 .meal:first-of-type { border-top: 0; }
@@ -90,7 +84,7 @@ main { padding: 12px 14px; max-width: 900px; margin: 0 auto; }
 
 .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .btn {
-  border: 1px solid var(--line); background: var(--card); color: var(--text);
+  min-height: 42px; border: 1px solid var(--line); background: var(--card); color: var(--text);
   border-radius: 10px; padding: 8px 14px; font-size: 14px;
 }
 .btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -99,14 +93,14 @@ main { padding: 12px 14px; max-width: 900px; margin: 0 auto; }
 .icon-btn { border: 0; background: none; font-size: 18px; color: var(--muted); padding: 4px 8px; }
 
 textarea, input[type=text] {
-  width: 100%; font: inherit; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
+  width: 100%; font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; border: 1px solid var(--line);
   background: var(--bg); color: var(--text);
 }
 textarea { min-height: 110px; resize: vertical; }
 
 .opt-list { display: flex; flex-direction: column; gap: 4px; }
 .opt {
-  display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px;
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px; min-height: 44px; border-radius: 10px;
   background: var(--bg); border: 1px solid var(--line); font-size: 14px;
 }
 .opt .t { flex: 1; }
@@ -147,3 +141,13 @@ details.cat[open] summary::after { content: '▾'; }
 .spesa-line.done { text-decoration: line-through; color: var(--muted); }
 .spesa-line .who { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
 .grid-week { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+@media (max-width: 480px) {
+  main { padding: 10px 12px; }
+  .card { padding: 12px; border-radius: 12px; }
+  .day-header { flex-wrap: wrap; gap: 6px; }
+  .grid-week { grid-template-columns: 1fr; }
+  .week-nav { margin-left: -12px; margin-right: -12px; padding: 0 12px; scrollbar-width: none; }
+  .week-nav::-webkit-scrollbar, .persone::-webkit-scrollbar { display: none; }
+  .modal-card { max-height: 94vh; }
+}
