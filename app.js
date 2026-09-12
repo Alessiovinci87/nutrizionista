@@ -89,6 +89,7 @@
   function prodotto(t) {
     let s = String(t || '').replace(/\(.*?\)/g, ' ').replace(/\b\d+([.,]\d+)?\s?(g|gr|ml|kg|l)\b/gi, ' ');
     s = s.replace(/\b(circa|oppure|con)\b\s*$/i, '').replace(/\s+/g, ' ').replace(/\s+([,.])/g, '$1').trim().replace(/^[,.\-\s]+|[,.\-\s]+$/g, '');
+    s = s.replace(/^\d+\s+/, '').replace(/\s\+\s\d+\s+/g, ' + ').trim();
     return s ? s[0].toUpperCase() + s.slice(1) : '';
   }
   function catalogo() {
