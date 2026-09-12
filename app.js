@@ -1,6 +1,7 @@
 /* Piano Alimentare Famiglia - logica app (vanilla JS, dati in localStorage) */
 (() => {
   const KEY = 'pianoAlimentare.v1';
+  const APP_VERSION = '1.3';
   const VIEWS = ['oggi', 'settimana', 'alimenti', 'spesa', 'altro'];
 
   /* ---------- icone (SVG inline, stile lucide) ---------- */
@@ -333,9 +334,16 @@
         <p class="muted" style="margin-bottom:10px">Riporta i menù o tutto ai valori iniziali della nutrizionista. Le preferenze delle bambine restano.</p>
         <div class="row"><button class="btn" id="resetMenu">${I.refresh} Solo i menù</button><button class="btn danger" id="resetAll">${I.trash} Tutto</button></div>
       </div>
+      <div class="section-title"><span>Aggiornamento</span></div>
+      <div class="card"><p class="muted" style="margin-bottom:10px">Versione <b>${APP_VERSION}</b>. Se non vedi le ultime novità, forza l'aggiornamento.</p><button class="btn primary" id="forceUpdate">${I.refresh} Aggiorna app</button></div>
       <div class="section-title"><span>Installa come app</span></div>
       <div class="card muted">iPhone: apri in Safari, Condividi → "Aggiungi alla schermata Home".<br>Android: menu ⋮ → "Aggiungi a schermata Home".</div>`;
     $('#noteSave').onclick = () => { state.note = $('#note').value; save(); toast('Note salvate'); };
+    $('#forceUpdate').onclick = async () => {
+      toast('Aggiorno…');
+      try { if ('serviceWorker' in navigator) { const regs = await navigator.serviceWorker.getRegistrations(); for (const r of regs) await r.unregister(); } if (window.caches) { for (const k of await caches.keys()) await caches.delete(k); } } catch (e) {}
+      location.href = location.pathname + '?v=' + Date.now() + '#altro';
+    };
     $('#expBtn').onclick = exportData;
     $('#impBtn').onclick = () => $('#impFile').click();
     $('#impFile').onchange = (e) => {
