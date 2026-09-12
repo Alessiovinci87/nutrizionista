@@ -1,4 +1,4 @@
-const CACHE = 'piano-alimentare-v3';
+const CACHE = 'piano-alimentare-v4';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './data.js', './manifest.json', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {

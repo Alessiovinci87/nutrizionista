@@ -5,10 +5,11 @@
 
   let state = load();
   let ui = {
-    view: 'oggi',
+    view: ['oggi','settimana','tabella','schede','spesa','impostazioni'].includes(location.hash.slice(1)) ? location.hash.slice(1) : 'oggi',
     persona: state.persone[0].id,
     giorno: ((new Date().getDay() + 6) % 7), // 0 = lunedì
     filtro: 'tutte',
+    tab: { persone: ['ale','marti'], pasti: ['pranzo','cena'], weekend: false },
     schedaPasto: 'pranzo',
   };
 
@@ -61,11 +62,11 @@
 
     document.querySelectorAll('.tabs button').forEach((b) => {
       b.classList.toggle('active', b.dataset.view === ui.view);
-      b.onclick = () => { ui.view = b.dataset.view; render(); window.scrollTo(0, 0); };
+      b.onclick = () => { ui.view = b.dataset.view; history.replaceState(null, '', '#' + ui.view); render(); window.scrollTo(0, 0); };
     });
 
     const v = $('#view');
-    ({ oggi: renderOggi, settimana: renderSettimana, schede: renderSchede, spesa: renderSpesa, impostazioni: renderImpostazioni })[ui.view](v);
+    ({ oggi: renderOggi, settimana: renderSettimana, tabella: renderTabella, schede: renderSchede, spesa: renderSpesa, impostazioni: renderImpostazioni })[ui.view](v);
   }
 
   function mealHTML(p, g, m) {
@@ -110,12 +111,6 @@
         <div class="day-header"><h2>${p.emoji} ${esc(p.nome)} - ${GIORNI[ui.giorno]}</h2>
           <button class="btn small" id="copiaGiorno">Copia a…</button></div>
         ${PASTI.map((m) => mealHTML(p, ui.giorno, m)).join('')}
-      </div>
-      <div class="card">
-        <h2>Riepilogo settimana</h2>
-        <div class="grid-week">
-        ${GIORNI.map((n, g) => `<div><h3>${n}</h3>${PASTI.map((m) => { const t = menuCell(p.id, g, m.id); return t ? `<div class="muted"><b>${m.emoji}</b> ${esc(t).replace(/\n/g, ' · ')}</div>` : ''; }).join('') || '<div class="muted">-</div>'}</div>`).join('')}
-        </div>
       </div>`;
     v.querySelectorAll('.week-nav button').forEach((b) => b.onclick = () => { ui.giorno = +b.dataset.g; render(); });
     bindMeals(v, p);
@@ -137,6 +132,41 @@
     $('#modalBody').querySelectorAll('[data-who]').forEach((b) => b.onclick = () => {
       state.menu[b.dataset.who][ui.giorno] = clone(state.menu[p.id][ui.giorno]); save(); closeModal(); render(); toast('Copiato');
     });
+  }
+
+
+  /* ---------- tabella settimanale ---------- */
+  const COLORI = { ale: '#2b6cb0', marti: '#b83280', mia: '#dd6b20', nicole: '#2f855a' };
+  function renderTabella(v) {
+    const t = ui.tab;
+    const persone = state.persone.filter((p) => t.persone.includes(p.id));
+    const pasti = PASTI.filter((m) => t.pasti.includes(m.id));
+    const giorni = t.weekend ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4];
+    const toggle = (arr, id) => { const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1); else arr.push(id); };
+    v.innerHTML = `
+      <div class="card no-print">
+        <h2>📊 Tabella settimanale</h2>
+        <h3>Persone</h3>
+        <div class="filter">${state.persone.map((p) => `<button data-tp="${p.id}" class="${t.persone.includes(p.id) ? 'active' : ''}">${p.emoji} ${esc(p.nome)}</button>`).join('')}</div>
+        <h3>Pasti</h3>
+        <div class="filter">${PASTI.map((m) => `<button data-tm="${m.id}" class="${t.pasti.includes(m.id) ? 'active' : ''}">${m.emoji} ${m.nome}</button>`).join('')}
+          <button data-tw="1" class="${t.weekend ? 'active' : ''}">+ Sab/Dom</button></div>
+        <div class="row"><button class="btn small" id="stampa">🖨️ Stampa / PDF</button><span class="muted">Tocca una casella per modificarla. Scorri in orizzontale se serve.</span></div>
+      </div>
+      <div class="tab-wrap"><table class="tab-week">
+        <thead><tr><th class="corner"></th>${giorni.map((g) => `<th>${GIORNI[g]}</th>`).join('')}</tr></thead>
+        <tbody>
+        ${pasti.map((m) => persone.map((p, pi) => `<tr class="${pi === 0 ? 'first' : ''}">
+            <th class="rowh" style="--c:${COLORI[p.id] || '#555'}"><div class="pasto">${m.emoji} ${m.nome}</div><div class="who">${p.emoji} ${esc(p.nome)}</div></th>
+            ${giorni.map((g) => { const txt = menuCell(p.id, g, m.id); return `<td data-p="${p.id}" data-g="${g}" data-m="${m.id}" style="--c:${COLORI[p.id] || '#555'}"><div class="cell ${txt ? '' : 'empty'}">${txt ? esc(txt).split('\n').map((l) => `<div>${l}</div>`).join('') : '—'}</div></td>`; }).join('')}
+          </tr>`).join('')).join('')}
+        </tbody>
+      </table></div>`;
+    v.querySelectorAll('[data-tp]').forEach((b) => b.onclick = () => { toggle(t.persone, b.dataset.tp); render(); });
+    v.querySelectorAll('[data-tm]').forEach((b) => b.onclick = () => { toggle(t.pasti, b.dataset.tm); render(); });
+    v.querySelector('[data-tw]').onclick = () => { t.weekend = !t.weekend; render(); };
+    v.querySelectorAll('td[data-p]').forEach((td) => td.onclick = () => openEditor(state.persone.find((x) => x.id === td.dataset.p), +td.dataset.g, td.dataset.m));
+    $('#stampa').onclick = () => window.print();
   }
 
   /* ---------- editor pasto ---------- */

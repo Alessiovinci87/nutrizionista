@@ -43,10 +43,10 @@ main { padding: 12px 14px; max-width: 900px; margin: 0 auto; }
   display: flex; margin: 8px -14px -8px; border-top: 1px solid var(--line);
 }
 .tabs button {
-  flex: 1; min-height: 50px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted);
+  flex: 1 1 0; min-width: 0; min-height: 50px; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--muted);
   padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 18px;
 }
-.tabs button span { font-size: 11px; }
+.tabs button span { font-size: 10px; white-space: nowrap; }
 .tabs button.active { color: var(--primary); border-bottom-color: var(--primary); }
 
 .card {
@@ -149,4 +149,41 @@ details.cat[open] summary::after { content: '▾'; }
   .week-nav { margin-left: -12px; margin-right: -12px; padding: 0 12px; scrollbar-width: none; }
   .week-nav::-webkit-scrollbar, .persone::-webkit-scrollbar { display: none; }
   .modal-card { max-height: 94vh; }
+}
+
+/* tabella settimanale (stile foto: caselle colorate per persona) */
+.tab-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -12px; padding: 0 12px 8px; }
+.tab-week { border-collapse: separate; border-spacing: 6px; min-width: 100%; }
+.tab-week th, .tab-week td { vertical-align: top; }
+.tab-week thead th {
+  background: #fff; border: 2px solid #ed8936; border-radius: 12px; padding: 10px 6px;
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; min-width: 118px; text-align: center;
+}
+.tab-week thead th.corner { border: 0; background: none; min-width: 90px; }
+.tab-week th.rowh {
+  background: #fff; border: 2px solid var(--c); border-radius: 12px; padding: 8px 6px; text-align: left; font-size: 12px;
+  position: sticky; left: 0; z-index: 1; min-width: 90px; max-width: 110px;
+}
+.tab-week th.rowh .pasto { font-weight: 700; color: var(--c); }
+.tab-week th.rowh .who { font-weight: 600; margin-top: 2px; }
+.tab-week td {
+  background: #fff; border: 2px solid var(--c); border-radius: 12px; padding: 8px 6px; cursor: pointer;
+  font-size: 13px; font-weight: 600; text-align: center; line-height: 1.35;
+}
+.tab-week td:active { background: var(--primary-soft); }
+.tab-week td .cell.empty { color: var(--muted); font-weight: 400; }
+.tab-week tr.first td, .tab-week tr.first th.rowh { margin-top: 6px; }
+@media (max-width: 480px) {
+  .tab-week thead th { min-width: 104px; font-size: 12px; }
+  .tab-week td { font-size: 12px; padding: 6px 4px; }
+}
+@media print {
+  @page { size: landscape; margin: 8mm; }
+  body { background: #fff; padding: 0; }
+  .topbar, .no-print, .modal, .toast { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .tab-wrap { overflow: visible; margin: 0; padding: 0; }
+  .tab-week { width: 100%; }
+  .tab-week th.rowh { position: static; }
+  .tab-week td, .tab-week th { break-inside: avoid; }
 }
