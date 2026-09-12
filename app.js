@@ -51,6 +51,7 @@
     alimPasto: 'pranzo',
     spesaMode: 'lista',
     spesaQ: '',
+    tipoOpen: {},
     tab: { persone: ['ale', 'marti'], pasti: ['pranzo', 'cena'], weekend: false },
   };
 
@@ -98,6 +99,24 @@
     for (const t of state.catalogo) put(t, 'custom');
     return [...map.values()].sort((x, y) => x.txt.localeCompare(y.txt, 'it'));
   }
+  const TIPOLOGIE = [
+    ['Pane e cereali', /\b(pane|panino|carasau|spianata|fette biscottate|crackers|grissini|gallette|taralli|piadina|focaccia|toast|cereali|fiocchi|avena|muesli|porridge|farro|cous ?cous|orzo|polenta|pancake|crêpe|cr[eè]pe|tortin[oa]|plumcake|muffin|ciambella|torta|biscott|barretta|popcorn)/i],
+    ['Pasta e riso', /\b(pasta|pastina|gnocchi|lasagne|riso|risotto|basmati|arborio|insalata di riso)/i],
+    ['Pesce', /\b(tonno|salmone|merluzzo|nasello|orata|pesce|polpo|calamar|seppi|gamber|platessa|sogliola|bastoncini|spada|sockeye)/i],
+    ['Carne', /\b(pollo|tacchino|vitello|vitellone|manzo|bovino|hamburger|fettina|polpett|carne|spezzatino|arrosto|cotoletta|scaloppin|straccetti|bocconcini|involtini|spiedini)/i],
+    ['Salumi', /\b(bresaola|prosciutto|crudo sgrassato|stick)/i],
+    ['Uova', /\b(uov[ao]|albume|frittata|omelette)/i],
+    ['Latticini e formaggi', /\b(latte|yogurt|ricotta|grana|parmigiano|formagg|mozzarell|stracchino|crescenza|primo sale|budino|gelato|burro|pro milk|spalmabile)/i],
+    ['Legumi', /\b(ceci|lenticchi|fagioli|piselli|legumi|hummus|fave)/i],
+    ['Verdure', /\b(verdur|ortaggi|zucchin|zucca|carciof|cipoll|asparag|broccol|cavol|bieta|cicoria|verza|fungh|champignon|spinaci|fagiolini|pomodor|carot|finocch|insalata|lattuga|radicchio|cetriol|peperon|melanzan|mais|barbabietol|patat|purè|pinzimonio|minestr|passato|vellutata|zuppa|sformato|avocado)/i],
+    ['Frutta secca', /\b(mandorl|noci|nocciol|frutta secca|uvetta)/i],
+    ['Frutta', /\b(frutt|mela|mele|pera|pere|banan|mandarin|clementin|aranci|spremuta|uva|fragol|pesc[ah]|albicocc|prugn|kiwi|anguria|melone|ciliegi|mirtill|lampon|ananas|macedonia|frullato|ghiacciolo)/i],
+    ['Condimenti', /\b(olio|pesto|miele|marmellata|cacao|cioccolat|zafferano|curry|sale|limone|salvia|basilico|cannella)/i],
+    ['Bevande', /\b(acqua|succo|tè|tisana|latte vegetale)/i],
+    ['Piatti pronti', /\b(pizza|pizzetta|mensa)/i],
+  ];
+  const tipologia = (t) => (TIPOLOGIE.find(([, re]) => re.test(t)) || ['Altro'])[0];
+  const TIPO_ORDINE = [...TIPOLOGIE.map((x) => x[0]), 'Altro'];
   const inSpesa = (t) => state.spesa.some((x) => x.txt.toLowerCase() === String(t).toLowerCase());
   function toggleSpesa(t) {
     const i = state.spesa.findIndex((x) => x.txt.toLowerCase() === t.toLowerCase());
@@ -329,7 +348,7 @@
     v.innerHTML = `
       <div class="card"><div class="addfree" style="margin-top:0"><input type="text" id="spesaNew" placeholder="Aggiungi alla lista… (es. latte)"><button class="btn primary" id="spesaAdd">${I.plus}</button></div></div>
       ${items.length ? `<div class="section-title"><span>${left} da prendere · ${items.length - left} presi</span><button class="btn small ghost" id="spesaClearDone">${I.trash} Togli i presi</button></div>
-      <div class="card">${items.map((l) => `<div class="spesa-line ${done[l.txt] ? 'done' : ''}" data-t="${esc(l.txt)}"><div class="chk">${I.check}</div><span class="t">${esc(l.txt)}</span><button class="edit" data-del="${esc(l.txt)}" aria-label="Togli dalla lista">${I.x}</button></div>`).join('')}</div>`
+      ${(() => { const groups = {}; for (const l of items) (groups[tipologia(l.txt)] ||= []).push(l); return TIPO_ORDINE.filter((k) => groups[k]).map((k) => `<div class="tipo-h">${esc(k)}</div><div class="card">${groups[k].map((l) => `<div class="spesa-line ${done[l.txt] ? 'done' : ''}" data-t="${esc(l.txt)}"><div class="chk">${I.check}</div><span class="t">${esc(l.txt)}</span><button class="edit" data-del="${esc(l.txt)}" aria-label="Togli dalla lista">${I.x}</button></div>`).join('')}</div>`).join(''); })()}`
       : `<div class="card" style="text-align:center;padding:28px 16px"><div style="color:#b0b7c0;margin-bottom:8px">${I.cart.replace('class="i"', 'class="i" style="width:40px;height:40px"')}</div><p style="font-weight:700">La lista è vuota</p><p class="muted" style="margin-top:4px">Vai in <b>Tutti gli alimenti</b> e flagga quello che ti serve, oppure scrivilo qui sopra.</p><button class="btn primary" id="goCat" style="margin-top:14px">${I.book} Tutti gli alimenti</button></div>`}
       ${items.length ? `<div class="row" style="margin:4px 6px"><button class="btn small ghost" id="addWeek">${I.calendar} Aggiungi tutto ciò che serve per i menù della settimana</button></div>` : ''}`;
     const add = () => { const t = $('#spesaNew').value.trim(); if (!t) return; addSpesa(t); render(); };
@@ -355,12 +374,14 @@
       </div>
       <p class="muted" style="margin:0 6px 10px">Flagga un alimento per metterlo in lista: lo ritrovi in <b>Lista</b> con la spunta per il supermercato.</p>
       ${!q && week.length ? `<div class="section-title"><span>Nei menù di questa settimana</span><button class="btn small ghost" id="flagWeek">${I.check} Flagga tutti</button></div><div class="card">${week.map(row).join('')}</div>` : ''}
-      <div class="section-title"><span>${q ? 'Risultati' : 'Tutti gli alimenti'} · ${rest.length}</span></div>
-      <div class="card">${rest.map(row).join('') || '<p class="muted">Nessun alimento trovato. Aggiungilo qui sopra.</p>'}</div>`;
+      ${(() => { const groups = {}; for (const c of rest) (groups[tipologia(c.txt)] ||= []).push(c); const keys = TIPO_ORDINE.filter((k) => groups[k]);
+        return keys.length ? keys.map((k) => `<details class="tipo" ${q || ui.tipoOpen[k] !== false ? 'open' : ''} data-k="${esc(k)}"><summary><span>${esc(k)}</span><span class="cnt">${groups[k].filter((c) => inSpesa(c.txt)).length ? `<b>${groups[k].filter((c) => inSpesa(c.txt)).length} in lista</b> · ` : ''}${groups[k].length}</span></summary><div class="card">${groups[k].map(row).join('')}</div></details>`).join('')
+        : '<div class="card"><p class="muted">Nessun alimento trovato. Aggiungilo qui sopra.</p></div>'; })()}`;
     const qi = $('#catQ'); qi.oninput = () => { ui.spesaQ = qi.value; renderCatalogo(v); const q2 = $('#catQ'); q2.focus(); q2.setSelectionRange(q2.value.length, q2.value.length); };
     const add = () => { const t = prodotto($('#catNew').value); if (!t) return; if (!state.catalogo.some((x) => x.toLowerCase() === t.toLowerCase())) state.catalogo.push(t); addSpesa(t); save(); render(); toast('Aggiunto e messo in lista'); };
     $('#catAdd').onclick = add; $('#catNew').onkeydown = (e) => { if (e.key === 'Enter') add(); };
     $$('.spesa-line.flag', v).forEach((el) => el.onclick = (e) => { if (e.target.closest('[data-delcat]')) return; toggleSpesa(el.dataset.t); renderSpesa($('#view')); });
+    $$('details.tipo', v).forEach((d) => d.ontoggle = () => { ui.tipoOpen[d.dataset.k] = d.open; });
     $$('[data-delcat]', v).forEach((b) => b.onclick = () => { state.catalogo = state.catalogo.filter((x) => x.toLowerCase() !== b.dataset.delcat.toLowerCase()); save(); render(); });
     const fw = $('#flagWeek'); if (fw) fw.onclick = () => { let n = 0; for (const c of week) if (addSpesa(c.txt)) n++; render(); toast(n ? `${n} prodotti in lista` : 'Già tutti in lista'); };
   }

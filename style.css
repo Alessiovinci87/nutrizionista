@@ -222,3 +222,14 @@ textarea { min-height: 100px; resize: vertical; }
 .spesa-line.flag .chk { border-radius: 50%; }
 .spesa-line.flag.done .t { text-decoration: none; color: var(--text); font-weight: 600; }
 .seg button svg.i { width: 16px; height: 16px; vertical-align: -3px; margin-right: 4px; }
+
+details.tipo { margin-bottom: 8px; }
+details.tipo summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px 6px 6px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+details.tipo summary::-webkit-details-marker { display: none; }
+details.tipo summary::before { content: '▸'; margin-right: 8px; color: #b0b7c0; }
+details.tipo[open] summary::before { content: '▾'; }
+details.tipo summary span:first-child { flex: 1; }
+details.tipo summary .cnt { font-weight: 500; text-transform: none; letter-spacing: 0; }
+details.tipo summary .cnt b { color: var(--primary); }
+details.tipo .card { margin-bottom: 4px; }
+.tipo-h { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 14px 6px 6px; }
