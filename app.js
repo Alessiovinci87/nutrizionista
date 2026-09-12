@@ -1,7 +1,6 @@
 /* Piano Alimentare Famiglia - logica app (vanilla JS, dati in localStorage) */
 (() => {
   const KEY = 'pianoAlimentare.v1';
-  const SPESA_KEY = 'pianoAlimentare.spesa';
   const VIEWS = ['oggi', 'settimana', 'alimenti', 'spesa', 'altro'];
 
   /* ---------- icone (SVG inline, stile lucide) ---------- */
@@ -38,6 +37,8 @@
   const PCOL = { ale: '#2563eb', marti: '#db2777', mia: '#ea580c', nicole: '#16a34a' };
 
   let state = load();
+  state.spesa ||= [];      // voci manuali: {txt}
+  state.spesaDone ||= {};  // spuntate: {txt:1}
   const oggiIdx = (new Date().getDay() + 6) % 7;
   const ui = {
     view: location.hash === '#tabella' ? 'settimana' : VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : 'oggi',
@@ -80,6 +81,11 @@
   function setMenuCell(pid, g, m, val) { (state.menu[pid][g] ||= {})[m] = val; save(); }
   const scheda = (p) => state.schede[p.scheda];
   const prefDi = (p, t) => isBambina(p) ? (state.preferenze[p.id] || {})[t] : undefined;
+  function addSpesa(txt) {
+    const t = String(txt || '').trim(); if (!t) return false;
+    if (state.spesa.some((x) => x.txt.toLowerCase() === t.toLowerCase())) return false;
+    state.spesa.push({ txt: t }); delete state.spesaDone[t]; save(); return true;
+  }
   function dateOf(g) { const d = new Date(); d.setDate(d.getDate() - oggiIdx + g); return d; }
 
   /* ---------- rendering ---------- */
@@ -191,7 +197,7 @@
   /* ---------- editor pasto (selezione a tocco) ---------- */
   function openEditor(p, g, pastoId) {
     const m = pasto(pastoId);
-    const cats = scheda(p)[pastoId] || [];
+    const cats = scheda(p)[pastoId] ||= [];
     let picked = lines(menuCell(p.id, g, pastoId));
     const bambina = isBambina(p);
     const isNutri = !bambina && (pastoId === 'pranzo' || pastoId === 'cena');
@@ -199,7 +205,7 @@
     const body = () => `
       <div class="picked" style="${mealVars(pastoId)}">
         <div class="lbl">${m.nome} di ${esc(p.nome)} · ${GIORNI[g]}</div>
-        <div class="items">${picked.length ? picked.map((t, i) => `<span class="tag">${fmtItem(t)}<button data-rm="${i}" aria-label="Togli">${I.x}</button></span>`).join('') : '<span class="empty">Niente ancora: tocca le opzioni qui sotto</span>'}</div>
+        <div class="items">${picked.length ? picked.map((t, i) => `<span class="tag"><span class="tt" data-ed="${i}" title="Tocca per modificare">${fmtItem(t)}</span><button data-rm="${i}" aria-label="Togli">${I.x}</button></span>`).join('') : '<span class="empty">Niente ancora: tocca le opzioni qui sotto</span>'}</div>
       </div>
       ${isScuola(p, g) && pastoId === 'pranzo' ? `<button class="btn ghost block" id="edMensa">${I.school} Mensa scolastica</button>` : ''}
       ${bambina ? `<div class="chips" style="margin-top:10px">
@@ -209,7 +215,8 @@
       </div>` : isNutri ? `<div class="note" style="margin-top:10px">${I.info}<span>Scheda della nutrizionista: scegli <b>un</b> alimento per ogni gruppo.</span></div>` : ''}
       ${cats.map((c) => { const items = c.items.filter((t) => filtroOk(p, t)); return `<div class="grp" style="${mealVars(pastoId)}"><h3>${esc(c.cat)}<small>${items.length}</small></h3>
         <div class="opts">${items.map((t) => { const on = picked.includes(t); const pr = prefDi(p, t); return `<button class="opt ${on ? 'on' : ''} ${pr === 'no' ? 'no' : ''} ${pr === 'si' ? 'like' : ''}" data-t="${esc(t)}">${on ? I.check : ''}${fmtItem(t)}</button>`; }).join('') || '<span class="muted">Nessuna opzione con questo filtro</span>'}</div></div>`; }).join('')}
-      <div class="addfree"><input type="text" id="edFree" placeholder="Altro… (es. 100g pasta)"><button class="btn primary" id="edAdd">${I.plus}</button></div>`;
+      <div class="addfree"><input type="text" id="edFree" placeholder="Altro… (es. 100g pasta)"><button class="btn primary" id="edAdd">${I.plus}</button></div>
+      <p class="muted" style="margin:6px 2px 0">Tocca una voce scelta per modificarla. Le voci nuove vengono salvate negli Alimenti (gruppo "Aggiunti da me") e messe in lista della spesa.</p>`;
 
     openSheet(`<div class="meal-ico" style="${mealVars(pastoId)}">${I[m.id]}</div>${m.nome}`, body(),
       `<button class="btn ghost" id="edCancel">Annulla</button><button class="btn primary" id="edSave">${I.check} Salva</button>`);
@@ -220,7 +227,18 @@
       $$('.opt', sb).forEach((b) => b.onclick = () => { const t = b.dataset.t; const i = picked.indexOf(t); if (i >= 0) picked.splice(i, 1); else picked.push(t); refresh(); });
       $$('[data-f]', sb).forEach((b) => b.onclick = () => { ui.filtro = b.dataset.f; refresh(); });
       const mensa = $('#edMensa'); if (mensa) mensa.onclick = () => { picked = ['Mensa scolastica']; refresh(); };
-      const add = () => { const t = $('#edFree').value.trim(); if (!t) return; picked.push(t); refresh(); };
+      $$('[data-ed]', sb).forEach((el) => el.onclick = () => {
+        const i = +el.dataset.ed; const inp = document.createElement('input'); inp.type = 'text'; inp.value = picked[i]; inp.className = 'tag-edit';
+        el.replaceWith(inp); inp.focus();
+        const done = () => { const t = inp.value.trim(); if (t) picked[i] = t; else picked.splice(i, 1); refresh(); };
+        inp.onblur = done; inp.onkeydown = (e) => { if (e.key === 'Enter') inp.blur(); if (e.key === 'Escape') { inp.value = picked[i]; inp.blur(); } };
+      });
+      const add = () => {
+        const t = $('#edFree').value.trim(); if (!t) return; picked.push(t);
+        const known = cats.some((c) => c.items.some((x) => x.toLowerCase() === t.toLowerCase()));
+        if (!known) { let g = cats.find((c) => c.cat === 'Aggiunti da me'); if (!g) { g = { cat: 'Aggiunti da me', items: [] }; cats.push(g); } g.items.push(t); }
+        addSpesa(t); save(); refresh(); toast('Aggiunto anche alla spesa');
+      };
       $('#edAdd').onclick = add;
       $('#edFree').onkeydown = (e) => { if (e.key === 'Enter') add(); };
     };
@@ -251,10 +269,12 @@
         <div class="cat-head"><h2>${esc(c.cat)}</h2><div class="row"><button class="btn small ghost" data-addi="${ci}">${I.plus} Aggiungi</button><button class="icon-btn" data-editc="${ci}" aria-label="Modifica categoria">${I.pencil}</button></div></div>
         ${c.items.map((t, ii) => { const pr = prefDi(p, t); return `<div class="food ${pr === 'no' ? 'no' : ''}"><span class="t">${fmtItem(t)}</span>
           ${bambina ? `<div class="thumbs"><button class="si ${pr === 'si' ? 'on' : ''}" data-pref="si" data-t="${esc(t)}">${I.up}</button><button class="no ${pr === 'no' ? 'on' : ''}" data-pref="no" data-t="${esc(t)}">${I.down}</button></div>` : ''}
+          <button class="edit ${state.spesa.some((x) => x.txt.toLowerCase() === t.toLowerCase()) ? 'incart' : ''}" data-cart="${esc(t)}" aria-label="Metti in lista spesa">${I.cart}</button>
           <button class="edit" data-editi="${ci}:${ii}" aria-label="Modifica">${I.pencil}</button></div>`; }).join('') || '<div class="muted">Nessun alimento</div>'}
       </div>`).join('')}
       <button class="btn ghost block" id="addCat">${I.plus} Nuovo gruppo</button>`;
     $$('.chips [data-m]', v).forEach((b) => b.onclick = () => { ui.alimPasto = b.dataset.m; render(); });
+    $$('[data-cart]', v).forEach((b) => b.onclick = () => { const t = b.dataset.cart; const i = state.spesa.findIndex((x) => x.txt.toLowerCase() === t.toLowerCase()); if (i >= 0) { state.spesa.splice(i, 1); save(); toast('Tolto dalla spesa'); } else { addSpesa(t); toast('Messo in lista spesa'); } render(); });
     $$('[data-pref]', v).forEach((b) => b.onclick = () => { const prefs = state.preferenze[p.id] ||= {}; const t = b.dataset.t, val = b.dataset.pref; if (prefs[t] === val) delete prefs[t]; else prefs[t] = val; save(); render(); });
     $('#addCat').onclick = () => openTextSheet('Nuovo gruppo', 'Nome del gruppo', '', (name) => { (scheda(p)[ui.alimPasto] ||= []).push({ cat: name, items: [] }); });
     $$('[data-addi]', v).forEach((b) => b.onclick = () => openTextSheet('Aggiungi alimento', 'Es. 80g pasta integrale', '', (t) => cats[+b.dataset.addi].items.push(t)));
@@ -272,21 +292,30 @@
 
   /* ---------- lista spesa ---------- */
   function renderSpesa(v) {
-    let done = {}; try { done = JSON.parse(localStorage.getItem(SPESA_KEY) || '{}'); } catch (e) {}
+    const done = state.spesaDone;
     const grouped = {};
     for (const p of state.persone) for (let g = 0; g < 7; g++) for (const m of PASTI) {
       for (const x of lines(menuCell(p.id, g, m.id))) { if (x === 'Mensa scolastica') continue; const k = x.toLowerCase(); (grouped[k] ||= { txt: x, who: new Set(), n: 0 }); grouped[k].who.add(p.id); grouped[k].n++; }
     }
-    const arr = Object.values(grouped).sort((a, b) => a.txt.localeCompare(b.txt));
-    const left = arr.filter((l) => !done[l.txt]).length;
+    const manual = state.spesa.filter((x) => !grouped[x.txt.toLowerCase()]);
+    const auto = Object.values(grouped).sort((a, b) => a.txt.localeCompare(b.txt));
+    const all = [...manual.map((x) => x.txt), ...auto.map((x) => x.txt)];
+    const left = all.filter((t) => !done[t]).length;
+    const line = (l, manualItem) => `<div class="spesa-line ${done[l.txt] ? 'done' : ''}" data-t="${esc(l.txt)}"><div class="chk">${I.check}</div><span class="t">${fmtItem(l.txt)}${l.n > 1 ? ` <b>×${l.n}</b>` : ''}</span>
+      ${manualItem ? `<button class="edit" data-del="${esc(l.txt)}" aria-label="Elimina">${I.trash}</button>` : `<span class="who">${[...l.who].map((id) => avatar(byId(id), 'xs')).join('')}</span>`}</div>`;
     v.innerHTML = `
-      <div class="section-title"><span>${left} da comprare · ${arr.length - left} presi</span><button class="btn small ghost" id="spesaReset">${I.refresh} Azzera</button></div>
-      <div class="card">
-        ${arr.map((l) => `<div class="spesa-line ${done[l.txt] ? 'done' : ''}" data-t="${esc(l.txt)}"><div class="chk">${I.check}</div><span class="t">${fmtItem(l.txt)}${l.n > 1 ? ` <b>×${l.n}</b>` : ''}</span><span class="who">${[...l.who].map((id) => avatar(byId(id), 'xs')).join('')}</span></div>`).join('') || '<p class="muted">Nessun pasto pianificato per la settimana.</p>'}
-      </div>
-      <p class="muted" style="margin:0 6px">La lista è generata dai menù di tutta la settimana. Le quantità si sommano: ×2 significa lo stesso alimento in due pasti.</p>`;
-    $$('.spesa-line', v).forEach((el) => el.onclick = () => { const t = el.dataset.t; if (done[t]) delete done[t]; else done[t] = 1; localStorage.setItem(SPESA_KEY, JSON.stringify(done)); render(); });
-    $('#spesaReset').onclick = () => { localStorage.removeItem(SPESA_KEY); render(); };
+      <div class="card"><div class="addfree" style="margin-top:0"><input type="text" id="spesaNew" placeholder="Aggiungi alla spesa… (es. latte, pane)"><button class="btn primary" id="spesaAdd">${I.plus}</button></div></div>
+      <div class="section-title"><span>${left} da comprare · ${all.length - left} presi</span><div class="row"><button class="btn small ghost" id="spesaClearDone">${I.trash} Togli i presi</button><button class="btn small ghost" id="spesaReset">${I.refresh} Azzera spunte</button></div></div>
+      ${manual.length ? `<div class="section-title"><span>Aggiunti a mano</span></div><div class="card">${manual.map((l) => line(l, true)).join('')}</div>` : ''}
+      <div class="section-title"><span>Dai menù della settimana</span></div>
+      <div class="card">${auto.map((l) => line(l, false)).join('') || '<p class="muted">Nessun pasto pianificato per la settimana.</p>'}</div>
+      <p class="muted" style="margin:0 6px">Le voci dei menù si aggiornano da sole quando cambi i pasti. ×2 = stesso alimento in due pasti. Puoi mettere in lista qualsiasi alimento anche dalla scheda Alimenti con il carrello.</p>`;
+    const add = () => { const t = $('#spesaNew').value.trim(); if (!t) return; addSpesa(t); render(); toast('Aggiunto'); };
+    $('#spesaAdd').onclick = add; $('#spesaNew').onkeydown = (e) => { if (e.key === 'Enter') add(); };
+    $$('.spesa-line', v).forEach((el) => el.onclick = (e) => { if (e.target.closest('[data-del]')) return; const t = el.dataset.t; if (done[t]) delete done[t]; else done[t] = 1; save(); render(); });
+    $$('[data-del]', v).forEach((b) => b.onclick = () => { const i = state.spesa.findIndex((x) => x.txt === b.dataset.del); if (i >= 0) state.spesa.splice(i, 1); delete done[b.dataset.del]; save(); render(); });
+    $('#spesaReset').onclick = () => { state.spesaDone = {}; save(); render(); };
+    $('#spesaClearDone').onclick = () => { state.spesa = state.spesa.filter((x) => !done[x.txt]); save(); render(); toast('Rimossi gli articoli presi (quelli dei menù restano)'); };
   }
 
   /* ---------- altro ---------- */
@@ -311,11 +340,11 @@
     $('#impBtn').onclick = () => $('#impFile').click();
     $('#impFile').onchange = (e) => {
       const f = e.target.files[0]; if (!f) return; const r = new FileReader();
-      r.onload = () => { try { const s = JSON.parse(r.result); if (!s.menu || !s.schede) throw 0; state = s; state.version = DATA_VERSION; save(); render(); toast('Importato'); } catch (err) { alert('File non valido'); } };
+      r.onload = () => { try { const s = JSON.parse(r.result); if (!s.menu || !s.schede) throw 0; state = s; state.version = DATA_VERSION; state.spesa ||= []; state.spesaDone ||= {}; save(); render(); toast('Importato'); } catch (err) { alert('File non valido'); } };
       r.readAsText(f);
     };
     $('#resetMenu').onclick = () => { if (!confirm('Ripristinare i menù settimanali predefiniti?')) return; state.menu = defaultState().menu; save(); render(); toast('Menù ripristinati'); };
-    $('#resetAll').onclick = () => { if (!confirm('Ripristinare TUTTO (schede e menù)?')) return; const prefs = state.preferenze; state = defaultState(); state.preferenze = prefs; save(); render(); toast('Ripristinato'); };
+    $('#resetAll').onclick = () => { if (!confirm('Ripristinare TUTTO (schede e menù)?')) return; const prefs = state.preferenze; state = defaultState(); state.preferenze = prefs; state.spesa = []; state.spesaDone = {}; save(); render(); toast('Ripristinato'); };
   }
   async function exportData() {
     const name = `piano-alimentare-${new Date().toISOString().slice(0, 10)}.json`;

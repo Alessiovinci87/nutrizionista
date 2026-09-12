@@ -213,3 +213,8 @@ textarea { min-height: 100px; resize: vertical; }
   .tab-week th.rowh { position: static; }
   .tab-week td, .tab-week th { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
 }
+
+.tag .tt { cursor: text; }
+.tag-edit { font: inherit; font-size: 14px; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--mc); background: var(--card); width: 200px; max-width: 70vw; }
+.food .edit.incart { color: var(--primary); }
+.spesa-line .edit { border: 0; background: none; color: #b0b7c0; padding: 4px; display: grid; }
