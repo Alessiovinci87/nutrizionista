@@ -1,7 +1,7 @@
 /* Piano Alimentare Famiglia - logica app (vanilla JS, dati in localStorage) */
 (() => {
   const KEY = 'pianoAlimentare.v1';
-  const APP_VERSION = '1.4';
+  const APP_VERSION = '1.5';
   const VIEWS = ['oggi', 'settimana', 'alimenti', 'spesa', 'altro'];
 
   /* ---------- icone (SVG inline, stile lucide) ---------- */
@@ -100,7 +100,7 @@
     return [...map.values()].sort((x, y) => x.txt.localeCompare(y.txt, 'it'));
   }
   const TIPOLOGIE = [
-    ['Pane e cereali', /\b(pane|panino|carasau|spianata|fette biscottate|crackers|grissini|gallette|taralli|piadina|focaccia|toast|cereali|fiocchi|avena|muesli|porridge|farro|cous ?cous|orzo|polenta|pancake|crêpe|cr[eè]pe|tortin[oa]|plumcake|muffin|ciambella|torta|biscott|barretta|popcorn)/i],
+    ['Pane, cereali e dolci', /\b(dolc|pane|panino|carasau|spianata|fette biscottate|crackers|grissini|gallette|taralli|piadina|focaccia|toast|cereali|fiocchi|avena|muesli|porridge|farro|cous ?cous|orzo|polenta|pancake|crêpe|cr[eè]pe|tortin[oa]|plumcake|muffin|ciambella|torta|biscott|barretta|popcorn)/i],
     ['Pasta e riso', /\b(pasta|pastina|gnocchi|lasagne|riso|risotto|basmati|arborio|insalata di riso)/i],
     ['Pesce', /\b(tonno|salmone|merluzzo|nasello|orata|pesce|polpo|calamar|seppi|gamber|platessa|sogliola|bastoncini|spada|sockeye)/i],
     ['Carne', /\b(pollo|tacchino|vitello|vitellone|manzo|bovino|hamburger|fettina|polpett|carne|spezzatino|arrosto|cotoletta|scaloppin|straccetti|bocconcini|involtini|spiedini)/i],
